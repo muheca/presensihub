@@ -10,7 +10,11 @@ const db = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'absensi_secret_key_2026_super_secure';
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET belum diatur di file .env');
+}
 
 // Middlewares
 app.use(cors());
