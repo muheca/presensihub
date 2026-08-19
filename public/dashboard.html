@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Presensi - Karyawan</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-slate-50 min-h-screen pb-12 text-slate-800">
+  
+  <!-- Header / Navigation -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/20">
+          <i data-lucide="scan-face" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-slate-900 leading-none">PresensiHub</h1>
+          <span class="text-[11px] text-slate-500 font-medium">Portal Karyawan / Siswa</span>
+        </div>
+      </div>
+
+      <!-- User Profile & Mobile Switcher & Logout -->
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a 
+          href="/mobile.html" 
+          class="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 sm:px-3 py-2 rounded-xl transition-colors shadow-sm"
+          title="Buka Versi Tampilan HP (PWA)"
+        >
+          <i data-lucide="smartphone" class="w-4 h-4"></i>
+          <span class="hidden md:inline">Mode HP (PWA)</span>
+        </a>
+
+        <button 
+          onclick="openQrModal()" 
+          class="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 sm:px-3 py-2 rounded-xl transition-colors"
+          title="Scan QR Code untuk buka di HP"
+        >
+          <i data-lucide="qr-code" class="w-4 h-4"></i>
+          <span class="hidden lg:inline">Buka di HP</span>
+        </button>
+
+        <div class="text-right hidden sm:block">
+          <div id="userName" class="text-sm font-semibold text-slate-900 leading-tight">Memuat...</div>
+          <div id="userPosition" class="text-xs text-slate-500 font-medium">Staff</div>
+        </div>
+        <div class="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center font-bold text-sm" id="userInitial">
+          U
+        </div>
+        <button 
+          onclick="Auth.logout()" 
+          title="Keluar" 
+          class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors ml-1"
+        >
+          <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
+    
+    <!-- Top Hero Banner: Digital Clock & Today Status -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- Live Clock Card -->
+      <div class="md:col-span-2 bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-600 text-white rounded-3xl p-6 shadow-lg shadow-indigo-600/10 flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+        
+        <div class="flex items-center justify-between relative z-10 mb-4">
+          <span class="text-xs font-semibold px-3 py-1 bg-white/20 rounded-full backdrop-blur-md text-indigo-100 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            Waktu Server Real-time
+          </span>
+          <span id="currentDate" class="text-xs text-indigo-100 font-medium">Memuat tanggal...</span>
+        </div>
+
+        <div class="relative z-10">
+          <div id="currentTime" class="text-4xl sm:text-5xl font-extrabold tracking-tight font-mono">
+            00:00:00
+          </div>
+          <p class="text-xs text-indigo-100/90 mt-2 flex items-center gap-1.5">
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+            Jadwal Masuk: <b id="scheduleStart">08:00</b> WIB (Toleransi <span id="scheduleTolerance">08:15</span>) | Pulang: <b id="scheduleEnd">17:00</b> WIB
+          </p>
+        </div>
+      </div>
+
+      <!-- Today Summary Status Card -->
+      <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status Presensi Hari Ini</span>
+          <div class="mt-3 flex items-center gap-3" id="todayStatusContainer">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center" id="todayStatusIcon">
+              <i data-lucide="alert-circle" class="w-6 h-6"></i>
+            </div>
+            <div>
+              <div id="todayStatusText" class="text-base font-bold text-slate-800">Belum Absen</div>
+              <div id="todayTimeDetails" class="text-xs text-slate-500">Silakan lakukan presensi masuk</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between">
+          <button 
+            onclick="openLeaveModal()" 
+            class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+          >
+            <i data-lucide="calendar-off" class="w-3.5 h-3.5"></i>
+            Ajukan Izin / Sakit
+          </button>
+          <span id="userNipBadge" class="text-xs font-medium text-slate-400">NIP: -</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Attendance Action Station (Camera + GPS + Trigger) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Live Camera Stream & Capture -->
+      <div class="lg:col-span-7 bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="camera" class="w-5 h-5 text-indigo-600"></i>
+              <h2 class="font-bold text-slate-900 text-base">Kamera Presensi Selfie</h2>
+            </div>
+            <button 
+              onclick="restartCamera()" 
+              class="text-xs font-medium text-slate-500 hover:text-slate-800 flex items-center gap-1 bg-slate-100 hover:bg-slate-200 px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              Reset Kamera
+            </button>
+          </div>
+
+          <!-- Video Wrapper -->
+          <div class="relative bg-slate-900 rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/10] flex items-center justify-center border-2 border-dashed border-slate-700/50">
+            <video id="webcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            
+            <!-- Target Face Guide Overlay -->
+            <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div class="w-48 h-60 border-2 border-white/40 rounded-[2.5rem] border-dashed pulse-camera flex items-center justify-center">
+                <span class="text-[11px] text-white/70 bg-black/40 px-2 py-1 rounded-full backdrop-blur-sm">Posisikan Wajah</span>
+              </div>
+            </div>
+
+            <div id="cameraLoading" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center text-slate-300 text-sm gap-2">
+              <i data-lucide="loader-2" class="w-8 h-8 animate-spin text-indigo-400"></i>
+              <span>Menyiapkan Kamera...</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Notes Input -->
+        <div class="mt-4">
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Catatan / Keterangan (Opsional):</label>
+          <input 
+            type="text" 
+            id="attendanceNotes" 
+            placeholder="Contoh: Kerja di Ruang Lab / Lantai 2..." 
+            class="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          >
+        </div>
+      </div>
+
+      <!-- Action & Location Details -->
+      <div class="lg:col-span-5 flex flex-col gap-4">
+        
+        <!-- GPS Status Card -->
+        <div class="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm">
+          <div class="flex items-center gap-2 mb-3">
+            <i data-lucide="map-pin" class="w-5 h-5 text-indigo-600"></i>
+            <h3 class="font-bold text-slate-900 text-sm">Lokasi & GPS Presensi</h3>
+          </div>
+
+          <div id="locationStatusBox" class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 mt-0.5" id="gpsIconBox">
+              <i data-lucide="navigation" class="w-4 h-4"></i>
+            </div>
+            <div class="flex-1 text-xs">
+              <div class="font-semibold text-slate-800" id="gpsStatusText">Mendeteksi koordinat GPS...</div>
+              <div class="text-slate-500 text-[11px] mt-0.5" id="gpsCoordinates">-</div>
+            </div>
+          </div>
+
+          <button 
+            onclick="fetchUserLocation()" 
+            class="w-full mt-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5"
+          >
+            <i data-lucide="locate" class="w-3.5 h-3.5"></i>
+            Perbarui Titik Lokasi
+          </button>
+        </div>
+
+        <!-- Check-in and Check-out Buttons Card -->
+        <div class="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm flex-1 flex flex-col justify-center space-y-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-sm mb-1">Aksi Presensi</h3>
+            <p class="text-xs text-slate-500">Pastikan wajah terlihat jelas pada kamera sebelum menekan tombol.</p>
+          </div>
+
+          <button 
+            id="btnCheckIn" 
+            onclick="submitAttendance('check-in')" 
+            class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm rounded-2xl shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/40 transition-all flex items-center justify-center gap-2"
+          >
+            <i data-lucide="log-in" class="w-5 h-5"></i>
+            <span>Presensi Masuk (Check-In)</span>
+          </button>
+
+          <button 
+            id="btnCheckOut" 
+            onclick="submitAttendance('check-out')" 
+            class="w-full py-3.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm rounded-2xl shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 transition-all flex items-center justify-center gap-2"
+          >
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+            <span>Presensi Pulang (Check-Out)</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Attendance History Table -->
+    <div class="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Riwayat Kehadiran Pribadi</h2>
+          <p class="text-xs text-slate-500">Daftar rekaman kehadiran dan status presensi Anda</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <label class="text-xs font-semibold text-slate-500">Bulan:</label>
+          <input 
+            type="month" 
+            id="historyMonth" 
+            class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            onchange="loadAttendanceHistory()"
+          >
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-600">
+          <thead class="bg-slate-50 text-slate-500 font-semibold border-y border-slate-200">
+            <tr>
+              <th class="py-3 px-4">Tanggal</th>
+              <th class="py-3 px-4">Jam Masuk</th>
+              <th class="py-3 px-4">Jam Pulang</th>
+              <th class="py-3 px-4">Foto Masuk</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Keterangan</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody" class="divide-y divide-slate-100 font-medium">
+            <tr>
+              <td colspan="6" class="py-8 text-center text-slate-400">Memuat riwayat kehadiran...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Leave Modal (Izin / Sakit / Cuti) -->
+  <div id="leaveModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+          </div>
+          <h3 class="font-bold text-slate-900 text-base">Form Pengajuan Izin / Sakit</h3>
+        </div>
+        <button onclick="closeLeaveModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="leaveForm" class="space-y-3.5">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Jenis Permohonan</label>
+          <select id="leaveType" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            <option value="Izin">Izin (Keperluan Penting)</option>
+            <option value="Sakit">Sakit (Dengan/Tanpa Surat Dokter)</option>
+            <option value="Cuti">Cuti Tahunan</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Mulai Tanggal</label>
+            <input type="date" id="leaveStartDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Sampai Tanggal</label>
+            <input type="date" id="leaveEndDate" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Alasan / Penjelasan Lengkap</label>
+          <textarea id="leaveReason" required rows="3" placeholder="Tuliskan keterangan permohonan Anda..." class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Lampiran / Bukti Surat (Opsional)</label>
+          <input type="file" id="leaveAttachment" accept="image/*,.pdf" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+        </div>
+
+        <div class="pt-3 flex gap-2">
+          <button type="button" onclick="closeLeaveModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">Batal</button>
+          <button type="submit" id="btnSubmitLeave" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20">Kirim Permohonan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Code Modal for Mobile Access -->
+  <div id="qrModal" class="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm hidden flex items-center justify-center p-4" onclick="closeQrModal()">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-100" onclick="event.stopPropagation()">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+        <i data-lucide="smartphone" class="w-6 h-6"></i>
+      </div>
+      <h3 class="font-extrabold text-slate-900 text-base">Buka Presensi di Smartphone</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4">Pastikan HP Anda terhubung ke Wi-Fi yang sama, lalu scan QR Code di bawah ini:</p>
+      
+      <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 inline-block shadow-inner">
+        <img id="qrCodeImg" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http://192.168.1.5:3000/mobile.html" alt="QR Code Akses Mobile" class="w-48 h-48 rounded-xl mx-auto">
+      </div>
+
+      <div class="mt-4 bg-indigo-50 border border-indigo-100 rounded-xl p-2.5 text-indigo-900 text-xs font-mono select-all">
+        http://192.168.1.5:3000/mobile.html
+      </div>
+
+      <button onclick="closeQrModal()" class="w-full mt-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-colors">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/attendance.js"></script>
+  <script>
+    function openQrModal() {
+      document.getElementById('qrModal').classList.remove('hidden');
+    }
+    function closeQrModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>

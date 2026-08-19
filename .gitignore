@@ -1,0 +1,11 @@
+node_modules/
+absensi.db
+.env
+.env.*
+!.env.example
+
+public/uploads/*
+!public/uploads/.gitkeep
+
+.DS_Store
+Thumbs.db

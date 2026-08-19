@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>PresensiHub Mobile</title>
+  
+  <!-- PWA Meta Tags -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4338ca">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PresensiHub">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <style>
+    /* Mobile-specific adjustments */
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .safe-bottom {
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+    }
+    .safe-top {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    .radar-pulse {
+      animation: radar 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+    @keyframes radar {
+      0%, 100% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 0.3; }
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-indigo-500 selection:text-white">
+
+  <!-- TOP MOBILE APP BAR -->
+  <header class="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 px-4 py-3 safe-top">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/30">
+          <i data-lucide="scan-face" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-sm font-extrabold text-white leading-tight flex items-center gap-1.5">
+            <span>PresensiHub</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          </h1>
+          <p class="text-[10px] text-indigo-300 font-medium" id="topUserNip">NIP: Memuat...</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="text-right">
+          <div id="topUserName" class="text-xs font-bold text-slate-200">User</div>
+          <div id="topUserPosition" class="text-[10px] text-slate-400">Staff</div>
+        </div>
+        <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-bold ring-2 ring-indigo-500/40" id="topUserInitial">
+          U
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PWA INSTALL BANNER (Appears if installable) -->
+  <div id="pwaInstallPrompt" class="hidden max-w-md mx-auto px-4 pt-3 w-full">
+    <div class="bg-gradient-to-r from-indigo-900/90 to-slate-800 border border-indigo-500/30 rounded-2xl p-3 flex items-center justify-between shadow-lg">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+          <i data-lucide="download" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h4 class="text-xs font-bold text-white">Pasang Aplikasi</h4>
+          <p class="text-[10px] text-slate-300">Akses cepat di layar utama HP</p>
+        </div>
+      </div>
+      <button id="btnInstallPwa" class="px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-[11px] font-bold rounded-xl shadow transition-all">
+        Instal
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN SCROLLABLE CONTENT CONTAINER -->
+  <main class="flex-1 max-w-md mx-auto w-full px-4 pt-4 pb-28">
+    
+    <!-- ================================================= -->
+    <!-- 1. TAB BERANDA (HOME) -->
+    <!-- ================================================= -->
+    <div id="tab-home" class="mobile-tab-view space-y-4">
+      
+      <!-- Live Clock Banner -->
+      <div class="bg-gradient-to-br from-indigo-700 via-indigo-600 to-slate-900 rounded-3xl p-5 border border-indigo-500/30 shadow-xl relative overflow-hidden">
+        <div class="absolute -right-8 -bottom-8 w-32 h-32 bg-indigo-400/20 rounded-full blur-2xl pointer-events-none"></div>
+        
+        <div class="flex items-center justify-between text-xs text-indigo-200 mb-2">
+          <span class="font-medium flex items-center gap-1">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-300"></i>
+            Waktu Sekarang
+          </span>
+          <span id="mobileDateText" class="text-[11px] font-semibold text-indigo-100">Memuat...</span>
+        </div>
+
+        <div id="mobileClockText" class="text-4xl font-extrabold text-white font-mono tracking-tight my-1">
+          00:00:00
+        </div>
+
+        <div class="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-indigo-200">
+          <div>Jam Masuk: <b class="text-white" id="homeWorkStart">08:00</b></div>
+          <div>Batas Telat: <b class="text-amber-300" id="homeTolerance">08:15</b></div>
+          <div>Pulang: <b class="text-white" id="homeWorkEnd">17:00</b></div>
+        </div>
+      </div>
+
+      <!-- Today Attendance Status Card -->
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-4 shadow-md">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Presensi Hari Ini</span>
+          <span id="todayBadgeStatus" class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Belum Absen
+          </span>
+        </div>
+
+        <div class="flex items-center gap-3.5">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0" id="homeStatusIcon">
+            <i data-lucide="scan" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white leading-snug" id="homeStatusTitle">Belum Melakukan Presensi</h3>
+            <p class="text-xs text-slate-400 mt-0.5" id="homeStatusSubtitle">Buka tab Presensi untuk Check-In dengan kamera.</p>
+          </div>
+        </div>
+
+        <!-- Quick Action Button to Camera -->
+        <button onclick="switchMobileTab('tab-presensi')" class="w-full mt-4 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-2xl font-bold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
+          <i data-lucide="camera" class="w-4 h-4"></i>
+          <span>Buka Kamera Presensi</span>
+        </button>
+      </div>
+
+      <!-- Quick Shortcuts Grid -->
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="switchMobileTab('tab-izin')" class="p-3.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-2xl text-left transition-all group">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+            <i data-lucide="file-plus" class="w-4 h-4"></i>
+          </div>
+          <div class="text-xs font-bold text-white">Ajukan Izin</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Sakit, Cuti, Keperluan</div>
+        </button>
+
+        <button onclick="switchMobileTab('tab-history')" class="p-3.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 rounded-2xl text-left transition-all group">
+          <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+            <i data-lucide="calendar-check" class="w-4 h-4"></i>
+          </div>
+          <div class="text-xs font-bold text-white">Riwayat Absen</div>
+          <div class="text-[10px] text-slate-400 mt-0.5">Lihat rekap presensi Anda</div>
+        </button>
+      </div>
+
+      <!-- GPS Radar Mini Preview -->
+      <div class="bg-slate-800/60 border border-slate-700/50 rounded-2xl p-3.5 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+          </div>
+          <div>
+            <div class="font-bold text-slate-200" id="miniGpsStatus">Mendeteksi Lokasi...</div>
+            <div class="text-[10px] text-slate-400" id="miniGpsDistance">-</div>
+          </div>
+        </div>
+        <button onclick="updateMobileGps()" class="text-indigo-400 hover:text-indigo-300 p-1.5">
+          <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- 2. TAB PRESENSI (KAMERA & GPS RADAR) -->
+    <!-- ================================================= -->
+    <div id="tab-presensi" class="mobile-tab-view hidden space-y-4">
+      
+      <!-- GPS Distance Radar Card -->
+      <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+          <div class="relative flex items-center justify-center">
+            <div class="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-500/40 flex items-center justify-center text-indigo-300">
+              <i data-lucide="navigation" class="w-4 h-4"></i>
+            </div>
+            <span class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-slate-900 radar-pulse"></span>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white flex items-center gap-1.5">
+              <span>Radar Jarak Kantor:</span>
+              <span id="presensiDistanceValue" class="text-emerald-400 font-extrabold">-</span>
+            </div>
+            <p class="text-[10px] text-slate-400" id="presensiGpsStatusText">Mencari koordinat GPS Anda...</p>
+          </div>
+        </div>
+
+        <button onclick="updateMobileGps()" class="text-xs text-indigo-400 hover:text-indigo-300 px-2.5 py-1.5 bg-indigo-500/10 rounded-xl font-semibold border border-indigo-500/20">
+          Ulang
+        </button>
+      </div>
+
+      <!-- Camera Viewport Card -->
+      <div class="bg-slate-900 border-2 border-slate-700/80 rounded-3xl overflow-hidden relative shadow-2xl flex flex-col justify-between">
+        
+        <!-- Video Stream Box -->
+        <div class="relative w-full aspect-[3/4] bg-black flex items-center justify-center overflow-hidden">
+          <video id="mobileWebcam" autoplay playsinline muted class="w-full h-full object-cover"></video>
+          <canvas id="mobileCanvas" class="hidden"></canvas>
+
+          <!-- Face Scan Guide Oval Overlay -->
+          <div class="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+            <div class="w-44 h-56 border-2 border-dashed border-indigo-400/80 rounded-[3rem] radar-pulse flex flex-col items-center justify-between py-4 shadow-[0_0_25px_rgba(99,102,241,0.3)]">
+              <span class="text-[10px] font-bold text-white bg-indigo-600/80 px-2.5 py-0.5 rounded-full backdrop-blur-md">Posisikan Wajah</span>
+              <span class="text-[9px] text-indigo-200 bg-black/50 px-2 py-0.5 rounded-full backdrop-blur-md">Pastikan Pencahayaan Cukup</span>
+            </div>
+          </div>
+
+          <!-- Camera Switch Toggle Floating Button -->
+          <button 
+            type="button" 
+            onclick="switchMobileCameraFacing()" 
+            class="absolute top-3 right-3 w-10 h-10 rounded-full bg-slate-900/70 border border-white/20 backdrop-blur-md text-white flex items-center justify-center shadow-lg active:scale-95 transition-all"
+            title="Ganti Kamera"
+          >
+            <i data-lucide="switch-camera" class="w-5 h-5"></i>
+          </button>
+
+          <!-- Camera Loading Indicator -->
+          <div id="mobileCameraLoading" class="absolute inset-0 bg-slate-900 flex flex-col items-center justify-center text-slate-300 text-xs gap-2">
+            <i data-lucide="loader-2" class="w-7 h-7 animate-spin text-indigo-400"></i>
+            <span>Menghubungkan Kamera HP...</span>
+          </div>
+        </div>
+
+        <!-- Optional Notes Field -->
+        <div class="p-3 bg-slate-800/90 border-t border-slate-700/80">
+          <input 
+            type="text" 
+            id="mobileNotesInput" 
+            placeholder="Catatan presensi (opsional, contoh: WFH/Lapangan)..." 
+            class="w-full bg-slate-900/90 border border-slate-700 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500"
+          >
+        </div>
+      </div>
+
+      <!-- Action Buttons (Check-In & Check-Out) -->
+      <div class="grid grid-cols-2 gap-3 pt-1">
+        <button 
+          id="btnMobileCheckIn" 
+          onclick="submitMobileAttendance('check-in')" 
+          class="py-3.5 px-3 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:border-slate-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+        >
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>Presensi Masuk</span>
+        </button>
+
+        <button 
+          id="btnMobileCheckOut" 
+          onclick="submitMobileAttendance('check-out')" 
+          class="py-3.5 px-3 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-600 disabled:border-slate-700 text-white font-bold text-xs rounded-2xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-1.5 transition-all active:scale-95"
+        >
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+          <span>Presensi Pulang</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- 3. TAB IZIN & SAKIT -->
+    <!-- ================================================= -->
+    <div id="tab-izin" class="mobile-tab-view hidden space-y-4">
+      
+      <!-- Leave Application Form Card -->
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-3xl p-5 shadow-md">
+        <div class="flex items-center gap-2 mb-4">
+          <div class="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+            <i data-lucide="file-plus-2" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white">Form Pengajuan Izin</h3>
+            <p class="text-[10px] text-slate-400">Ajukan permohonan ke admin</p>
+          </div>
+        </div>
+
+        <form id="mobileLeaveForm" class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Jenis Permohonan</label>
+            <select id="mobileLeaveType" required class="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="Izin">Izin (Keperluan Penting)</option>
+              <option value="Sakit">Sakit (Kondisi Kesehatan)</option>
+              <option value="Cuti">Cuti Tahunan</option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Mulai</label>
+              <input type="date" id="mobileLeaveStart" required class="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-300 mb-1">Sampai</label>
+              <input type="date" id="mobileLeaveEnd" required class="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Alasan Lengkap</label>
+            <textarea id="mobileLeaveReason" rows="2" required placeholder="Tuliskan keterangan permohonan Anda..." class="w-full bg-slate-900 border border-slate-700 text-white text-xs rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder:text-slate-500"></textarea>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Lampiran / Foto Surat (Opsional)</label>
+            <input type="file" id="mobileLeaveFile" accept="image/*,.pdf" capture="environment" class="w-full text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-500">
+          </div>
+
+          <button type="submit" id="btnSubmitMobileLeave" class="w-full mt-2 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-1.5">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            <span>Kirim Permohonan Izin</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Previous Leaves History -->
+      <div class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-300 px-1">Riwayat Pengajuan Saya</h4>
+        <div id="mobileLeavesList" class="space-y-2">
+          <div class="p-4 bg-slate-800/60 border border-slate-700/50 rounded-2xl text-center text-xs text-slate-400">
+            Memuat data pengajuan...
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- 4. TAB RIWAYAT (HISTORY) -->
+    <!-- ================================================= -->
+    <div id="tab-history" class="mobile-tab-view hidden space-y-4">
+      
+      <!-- Month Filter Card -->
+      <div class="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
+        <span class="text-xs font-bold text-slate-300">Pilih Bulan:</span>
+        <input 
+          type="month" 
+          id="mobileHistoryMonth" 
+          class="bg-slate-900 border border-slate-700 text-white text-xs rounded-xl px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          onchange="loadMobileAttendanceHistory()"
+        >
+      </div>
+
+      <!-- History List Cards -->
+      <div id="mobileHistoryContainer" class="space-y-2.5">
+        <div class="p-8 text-center text-slate-400 text-xs">
+          Memuat riwayat kehadiran...
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================================================= -->
+    <!-- 5. TAB PROFIL (ACCOUNT) -->
+    <!-- ================================================= -->
+    <div id="tab-profile" class="mobile-tab-view hidden space-y-4">
+      
+      <!-- Profile Card -->
+      <div class="bg-gradient-to-b from-slate-800 to-slate-900 border border-slate-700/80 rounded-3xl p-6 text-center shadow-lg relative overflow-hidden">
+        <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-2xl font-black shadow-xl ring-4 ring-indigo-500/20 mb-3" id="profileLargeInitial">
+          U
+        </div>
+        <h3 class="text-base font-extrabold text-white" id="profileName">Nama Pengguna</h3>
+        <p class="text-xs text-indigo-300 mt-0.5" id="profilePosition">Jabatan</p>
+        
+        <div class="mt-4 pt-4 border-t border-slate-700/60 grid grid-cols-2 gap-3 text-left">
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">NIP</span>
+            <span class="text-xs font-bold text-slate-200 font-mono" id="profileNip">-</span>
+          </div>
+          <div class="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+            <span class="text-[10px] text-slate-400 block">Email</span>
+            <span class="text-xs font-bold text-slate-200 truncate block" id="profileEmail">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- App Info & Links -->
+      <div class="bg-slate-800/80 border border-slate-700/60 rounded-2xl overflow-hidden divide-y divide-slate-700/50 text-xs">
+        <div class="p-3.5 flex items-center justify-between text-slate-300">
+          <span>Versi Aplikasi</span>
+          <span class="font-bold text-indigo-400">PresensiHub v2.0 (PWA)</span>
+        </div>
+        <div class="p-3.5 flex items-center justify-between text-slate-300">
+          <span>Status Layanan</span>
+          <span class="text-emerald-400 font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Online & Terhubung
+          </span>
+        </div>
+        <a id="linkAdminDesktop" href="/admin.html" class="p-3.5 flex items-center justify-between text-amber-300 hover:bg-slate-700/40 transition-colors hidden">
+          <span class="flex items-center gap-2">
+            <i data-lucide="shield" class="w-4 h-4"></i>
+            <span>Buka Panel Administrator</span>
+          </span>
+          <i data-lucide="chevron-right" class="w-4 h-4 text-slate-500"></i>
+        </a>
+      </div>
+
+      <!-- Logout Button -->
+      <button 
+        onclick="Auth.logout()" 
+        class="w-full py-3.5 bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+      >
+        <i data-lucide="log-out" class="w-4 h-4"></i>
+        <span>Keluar dari Akun</span>
+      </button>
+
+    </div>
+
+  </main>
+
+  <!-- ================================================= -->
+  <!-- BOTTOM NAVIGATION BAR (FIXED) -->
+  <!-- ================================================= -->
+  <nav class="fixed bottom-0 inset-x-0 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 z-50 px-3 py-2 safe-bottom">
+    <div class="max-w-md mx-auto grid grid-cols-5 gap-1">
+      
+      <!-- Tab 1: Home -->
+      <button onclick="switchMobileTab('tab-home')" id="nav-tab-home" class="mobile-nav-btn active flex flex-col items-center justify-center py-1 rounded-xl text-indigo-400 font-bold transition-all">
+        <i data-lucide="home" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Beranda</span>
+      </button>
+
+      <!-- Tab 2: Presensi Camera -->
+      <button onclick="switchMobileTab('tab-presensi')" id="nav-tab-presensi" class="mobile-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium transition-all">
+        <div class="relative">
+          <i data-lucide="camera" class="w-5 h-5 mb-0.5"></i>
+          <span class="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-emerald-400"></span>
+        </div>
+        <span class="text-[10px]">Presensi</span>
+      </button>
+
+      <!-- Tab 3: Izin -->
+      <button onclick="switchMobileTab('tab-izin')" id="nav-tab-izin" class="mobile-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium transition-all">
+        <i data-lucide="file-text" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Izin</span>
+      </button>
+
+      <!-- Tab 4: Riwayat -->
+      <button onclick="switchMobileTab('tab-history')" id="nav-tab-history" class="mobile-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium transition-all">
+        <i data-lucide="calendar" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Riwayat</span>
+      </button>
+
+      <!-- Tab 5: Profil -->
+      <button onclick="switchMobileTab('tab-profile')" id="nav-tab-profile" class="mobile-nav-btn flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium transition-all">
+        <i data-lucide="user" class="w-5 h-5 mb-0.5"></i>
+        <span class="text-[10px]">Profil</span>
+      </button>
+
+    </div>
+  </nav>
+
+  <!-- Image Lightbox Modal for Mobile -->
+  <div id="mobileImageModal" class="fixed inset-0 z-50 bg-black/90 hidden flex items-center justify-center p-4" onclick="closeMobileImageModal()">
+    <div class="relative max-w-sm w-full bg-slate-900 rounded-3xl overflow-hidden shadow-2xl p-2" onclick="event.stopPropagation()">
+      <img id="mobileModalImg" src="" alt="Bukti Foto" class="w-full h-auto rounded-2xl object-contain max-h-[75vh]">
+      <div class="p-3 text-center text-xs text-slate-300 font-semibold" id="mobileModalImgCaption">Foto Presensi</div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/mobile.js"></script>
+</body>
+</html>

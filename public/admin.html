@@ -1,0 +1,479 @@
+﻿<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Sistem Absensi Online</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 pb-16">
+
+  <!-- Top Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-600/20">
+          <i data-lucide="shield-check" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold text-slate-900 leading-none">PresensiHub</h1>
+            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wide bg-amber-100 text-amber-800 border border-amber-200">Admin</span>
+          </div>
+          <span class="text-[11px] text-slate-500 font-medium" id="headerCompanyName">Panel Administrasi & Rekapitulasi</span>
+        </div>
+      </div>
+
+      <!-- Admin Profile & Actions -->
+      <div class="flex items-center gap-3">
+        <a 
+          href="/dashboard.html" 
+          class="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-xl transition-colors"
+        >
+          <i data-lucide="user" class="w-3.5 h-3.5"></i>
+          <span>Mode Pegawai</span>
+        </a>
+        <div class="text-right hidden md:block">
+          <div id="adminName" class="text-sm font-semibold text-slate-900 leading-tight">Administrator</div>
+          <div class="text-xs text-slate-500 font-medium">Super Admin</div>
+        </div>
+        <button 
+          onclick="Auth.logout()" 
+          title="Keluar" 
+          class="p-2 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors"
+        >
+          <i data-lucide="log-out" class="w-5 h-5"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-6 space-y-6">
+    
+    <!-- Top Statistics Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+      
+      <!-- Total Employees -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-xs font-semibold">Total Pegawai</span>
+          <i data-lucide="users" class="w-4 h-4 text-indigo-500"></i>
+        </div>
+        <div class="mt-3 text-2xl font-extrabold text-slate-900" id="statTotalEmployees">0</div>
+      </div>
+
+      <!-- Present On Time -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-xs font-semibold">Tepat Waktu</span>
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i>
+        </div>
+        <div class="mt-3 text-2xl font-extrabold text-emerald-600" id="statOnTime">0</div>
+      </div>
+
+      <!-- Late -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-xs font-semibold">Terlambat</span>
+          <i data-lucide="clock" class="w-4 h-4 text-rose-500"></i>
+        </div>
+        <div class="mt-3 text-2xl font-extrabold text-rose-600" id="statLate">0</div>
+      </div>
+
+      <!-- Leave -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-xs font-semibold">Izin / Cuti</span>
+          <i data-lucide="calendar-off" class="w-4 h-4 text-blue-500"></i>
+        </div>
+        <div class="mt-3 text-2xl font-extrabold text-blue-600" id="statLeave">0</div>
+      </div>
+
+      <!-- Sick -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-xs font-semibold">Sakit</span>
+          <i data-lucide="activity" class="w-4 h-4 text-amber-500"></i>
+        </div>
+        <div class="mt-3 text-2xl font-extrabold text-amber-600" id="statSick">0</div>
+      </div>
+
+      <!-- Absent / Unrecorded -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500">
+          <span class="text-xs font-semibold">Belum Hadir</span>
+          <i data-lucide="user-x" class="w-4 h-4 text-slate-400"></i>
+        </div>
+        <div class="mt-3 text-2xl font-extrabold text-slate-600" id="statAbsent">0</div>
+      </div>
+
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200 overflow-x-auto pb-1">
+      <button 
+        onclick="switchTab('tab-attendances')" 
+        id="btn-tab-attendances" 
+        class="tab-btn active px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 bg-indigo-600 text-white transition-all whitespace-nowrap shadow-sm"
+      >
+        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+        <span>Rekap Presensi</span>
+      </button>
+
+      <button 
+        onclick="switchTab('tab-leaves')" 
+        id="btn-tab-leaves" 
+        class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap border border-slate-200"
+      >
+        <i data-lucide="file-check" class="w-4 h-4"></i>
+        <span>Persetujuan Izin</span>
+        <span id="badgePendingLeaves" class="hidden px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500 text-white">0</span>
+      </button>
+
+      <button 
+        onclick="switchTab('tab-users')" 
+        id="btn-tab-users" 
+        class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap border border-slate-200"
+      >
+        <i data-lucide="users" class="w-4 h-4"></i>
+        <span>Data Pegawai</span>
+      </button>
+
+      <button 
+        onclick="switchTab('tab-settings')" 
+        id="btn-tab-settings" 
+        class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 bg-white text-slate-600 hover:bg-slate-100 transition-all whitespace-nowrap border border-slate-200"
+      >
+        <i data-lucide="settings" class="w-4 h-4"></i>
+        <span>Pengaturan Jam & Kantor</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: REKAP PRESENSI -->
+    <div id="tab-attendances" class="tab-content space-y-4">
+      
+      <!-- Filter & Search Bar -->
+      <div class="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <!-- Date Filter -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500">Tanggal:</span>
+            <input 
+              type="date" 
+              id="filterDate" 
+              class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              onchange="loadAdminAttendances()"
+            >
+          </div>
+
+          <!-- Status Filter -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500">Status:</span>
+            <select 
+              id="filterStatus" 
+              class="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              onchange="loadAdminAttendances()"
+            >
+              <option value="ALL">Semua Status</option>
+              <option value="Tepat Waktu">Tepat Waktu</option>
+              <option value="Terlambat">Terlambat</option>
+              <option value="Izin">Izin</option>
+              <option value="Sakit">Sakit</option>
+              <option value="Cuti">Cuti</option>
+            </select>
+          </div>
+
+          <!-- Search Input -->
+          <div class="relative flex-1 sm:w-48">
+            <input 
+              type="text" 
+              id="searchKeyword" 
+              placeholder="Cari nama / NIP..." 
+              class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              oninput="loadAdminAttendances()"
+            >
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+          </div>
+        </div>
+
+        <!-- Export & Print Actions -->
+        <div class="flex items-center gap-2 w-full md:w-auto justify-end">
+          <button 
+            onclick="exportToExcel()" 
+            class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition-all shadow-sm flex items-center gap-1.5"
+          >
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+            <span>Export Excel (.xlsx)</span>
+          </button>
+          <button 
+            onclick="window.print()" 
+            class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1.5"
+          >
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            <span>Cetak PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Attendance Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">Pegawai</th>
+                <th class="py-3.5 px-4">Tanggal</th>
+                <th class="py-3.5 px-4">Jam Masuk</th>
+                <th class="py-3.5 px-4">Jam Pulang</th>
+                <th class="py-3.5 px-4">Foto Selfie</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4">Koordinat GPS</th>
+                <th class="py-3.5 px-4">Catatan</th>
+              </tr>
+            </thead>
+            <tbody id="adminAttendanceTableBody" class="divide-y divide-slate-100 font-medium">
+              <tr>
+                <td colspan="8" class="py-10 text-center text-slate-400">Memuat data presensi...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: PERSETUJUAN IZIN -->
+    <div id="tab-leaves" class="tab-content hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div>
+          <h2 class="font-bold text-slate-900 text-base">Permohonan Izin / Sakit / Cuti</h2>
+          <p class="text-xs text-slate-500">Tinjau dan setujui pengajuan izin dari pegawai</p>
+        </div>
+        <button onclick="loadAdminLeaves()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl">
+          <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">Pegawai</th>
+                <th class="py-3.5 px-4">Tipe</th>
+                <th class="py-3.5 px-4">Periode Tanggal</th>
+                <th class="py-3.5 px-4">Alasan</th>
+                <th class="py-3.5 px-4">Bukti Surat</th>
+                <th class="py-3.5 px-4">Status</th>
+                <th class="py-3.5 px-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="adminLeavesTableBody" class="divide-y divide-slate-100 font-medium">
+              <tr>
+                <td colspan="7" class="py-10 text-center text-slate-400">Memuat daftar izin...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: DATA PEGAWAI -->
+    <div id="tab-users" class="tab-content hidden space-y-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="font-bold text-slate-900 text-base">Manajemen Pegawai & Pengguna</h2>
+          <p class="text-xs text-slate-500">Kelola akun, jabatan, dan kredensial login</p>
+        </div>
+        <button 
+          onclick="openUserModal()" 
+          class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl shadow-md shadow-indigo-600/20 transition-all flex items-center gap-1.5"
+        >
+          <i data-lucide="user-plus" class="w-4 h-4"></i>
+          <span>Tambah Pegawai Baru</span>
+        </button>
+      </div>
+
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4">NIP</th>
+                <th class="py-3.5 px-4">Nama Lengkap</th>
+                <th class="py-3.5 px-4">Email</th>
+                <th class="py-3.5 px-4">Jabatan</th>
+                <th class="py-3.5 px-4">Role</th>
+                <th class="py-3.5 px-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody" class="divide-y divide-slate-100 font-medium">
+              <tr>
+                <td colspan="6" class="py-10 text-center text-slate-400">Memuat data pegawai...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: PENGATURAN KANTOR & JAM -->
+    <div id="tab-settings" class="tab-content hidden">
+      <div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 max-w-3xl">
+        <div class="mb-6">
+          <h2 class="font-bold text-slate-900 text-lg">Pengaturan Sistem & Kebijakan Absensi</h2>
+          <p class="text-xs text-slate-500">Sesuaikan jadwal jam kerja, radius lokasi kantor, dan validasi.</p>
+        </div>
+
+        <form id="settingsForm" class="space-y-5">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1.5">Nama Perusahaan / Instansi / Sekolah</label>
+            <input type="text" id="settingCompanyName" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Jam Masuk (HH:MM)</label>
+              <input type="time" id="settingWorkStart" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Batas Toleransi Telat</label>
+              <input type="time" id="settingLateTolerance" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Jam Pulang (HH:MM)</label>
+              <input type="time" id="settingWorkEnd" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100">
+            <h3 class="font-bold text-slate-900 text-sm mb-3">Pengaturan Titik Lokasi Kantor (Geofencing)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Latitude Kantor</label>
+                <input type="text" id="settingOfficeLat" placeholder="-6.200000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Longitude Kantor</label>
+                <input type="text" id="settingOfficeLng" placeholder="106.816666" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1.5">Radius Toleransi (Meter)</label>
+                <input type="number" id="settingMaxDistance" placeholder="200" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+              </div>
+            </div>
+
+            <div class="mt-3 flex gap-2">
+              <button 
+                type="button" 
+                onclick="setCurrentCoordinatesAsOffice()" 
+                class="text-xs font-semibold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5"
+              >
+                <i data-lucide="map-pin" class="w-3.5 h-3.5"></i>
+                Gunakan Lokasi Saya Saat Ini Sebagai Titik Kantor
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 space-y-3">
+            <h3 class="font-bold text-slate-900 text-sm">Validasi Presensi</h3>
+            <div class="flex items-center gap-3">
+              <input type="checkbox" id="settingRequireGps" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <label for="settingRequireGps" class="text-xs font-medium text-slate-700">Wajibkan Deteksi Lokasi GPS & Radius (Karyawan harus berada di kantor)</label>
+            </div>
+            <div class="flex items-center gap-3">
+              <input type="checkbox" id="settingRequirePhoto" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+              <label for="settingRequirePhoto" class="text-xs font-medium text-slate-700">Wajibkan Foto Selfie Saat Presensi</label>
+            </div>
+          </div>
+
+          <div class="pt-4">
+            <button 
+              type="submit" 
+              id="btnSaveSettings" 
+              class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
+            >
+              <i data-lucide="save" class="w-4 h-4"></i>
+              <span>Simpan Pengaturan</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- User Modal (Create / Edit) -->
+  <div id="userModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold text-slate-900 text-base" id="userModalTitle">Tambah Pegawai Baru</h3>
+        <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="userForm" class="space-y-3.5">
+        <input type="hidden" id="modalUserId">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">NIP / Nomor Induk</label>
+          <input type="text" id="modalUserNip" required placeholder="PEG-001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label>
+          <input type="text" id="modalUserName" required placeholder="Budi Santoso" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Email</label>
+          <input type="email" id="modalUserEmail" required placeholder="budi@example.com" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Jabatan / Posisi</label>
+            <input type="text" id="modalUserPosition" placeholder="Staff IT" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Hak Akses (Role)</label>
+            <select id="modalUserRole" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+              <option value="pegawai">Pegawai / Siswa</option>
+              <option value="admin">Administrator</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1" id="modalPassLabel">Kata Sandi</label>
+          <input type="password" id="modalUserPassword" placeholder="Minimal 6 karakter" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50">
+          <span class="text-[11px] text-slate-400 hidden" id="modalPassHint">Kosongkan jika tidak ingin mengubah kata sandi.</span>
+        </div>
+
+        <div class="pt-3 flex gap-2">
+          <button type="button" onclick="closeUserModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">Batal</button>
+          <button type="submit" id="btnSubmitUser" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20">Simpan Pegawai</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Image Lightbox Modal -->
+  <div id="imageModal" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4" onclick="closeImageModal()">
+    <div class="relative max-w-lg w-full bg-slate-900 rounded-2xl overflow-hidden shadow-2xl p-2" onclick="event.stopPropagation()">
+      <img id="modalImg" src="" alt="Bukti Foto" class="w-full h-auto rounded-xl object-contain max-h-[80vh]">
+      <div class="p-3 text-center text-xs text-slate-300 font-medium" id="modalImgCaption">Foto Presensi</div>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>
